@@ -1,0 +1,23 @@
+{
+  "subnet": "",
+  "subnets": [],
+  "hosts": [],
+  "exclude": [],
+  "community": "public",
+  "timeoutMs": 1500,
+  "retries": 1,
+  "concurrency": 8,
+  "intervalMinutes": 15,
+  "listen": "127.0.0.1:49321",
+  "openBrowser": true,
+  "warnPercent": 25,
+  "critPercent": 10,
+  "historyDays": 14,
+  "groups": {},
+  "locations": {},
+  "telegram": {
+    "enabled": false,
+    "token": "",
+    "chatId": ""
+  }
+}

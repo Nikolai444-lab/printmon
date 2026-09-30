@@ -1,0 +1,19 @@
+# артефакты сборки и данные программы
+printmon
+printmon.exe
+printmon-gui.exe
+printmon-linux
+dist/
+*.exe
+*.db
+data/
+
+# рабочее
+*.log
+*.tmp
+
+# редакторы и ОС
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

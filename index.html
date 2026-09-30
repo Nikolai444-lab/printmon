@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Принтеры — остаток тонера</title>
+<style>
+  :root{
+    --bg:#0f1216; --panel:#171b21; --line:#242a33; --txt:#e8edf3; --dim:#8b97a8;
+    --ok:#3fb950; --warn:#d29922; --orange:#db6d28; --crit:#f85149; --accent:#58a6ff;
+    --th-bg:#141a20; --bar-bg:#242a33; --hover:#1c222b;
+    --alerts-bg:#1d1416; --alerts-line:#4a2225; --alerts-txt:#ffb4ae; --alerts-sep:#33201f;
+  }
+  html[data-theme="light"]{
+    --bg:#f6f8fa; --panel:#ffffff; --line:#d8dee6; --txt:#1f2328; --dim:#59636e;
+    --ok:#1a7f37; --warn:#9a6700; --orange:#bc4c00; --crit:#cf222e; --accent:#0969da;
+    --th-bg:#eef1f5; --bar-bg:#dde3ea; --hover:#f0f3f7;
+    --alerts-bg:#fff5f5; --alerts-line:#f0c2c2; --alerts-txt:#a40e26; --alerts-sep:#f3d8d8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+       font:15px/1.45 -apple-system,"Segoe UI",Roboto,Ubuntu,sans-serif}
+  header{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;
+         flex-wrap:wrap;gap:14px;align-items:center;position:sticky;top:0;
+         background:var(--bg);z-index:5}
+  h1{font-size:19px;margin:0;font-weight:600}
+  .muted{color:var(--dim);font-size:13px}
+  .grow{flex:1}
+  button,input,select{background:var(--panel);color:var(--txt);border:1px solid var(--line);
+        border-radius:8px;padding:7px 11px;font-size:14px;font-family:inherit}
+  button{cursor:pointer}
+  button:hover{border-color:var(--accent)}
+  main{padding:18px 22px 60px;max-width:1500px;margin:0 auto}
+  .cards{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+        padding:12px 16px;min-width:150px}
+  .card b{display:block;font-size:24px;margin-top:4px}
+  .alerts{background:var(--alerts-bg);border:1px solid var(--alerts-line);border-radius:12px;
+          padding:12px 16px;margin-bottom:18px}
+  .alerts h2{margin:0 0 8px;font-size:15px;color:var(--alerts-txt)}
+  .alerts .row{padding:4px 0;border-top:1px solid var(--alerts-sep);font-size:14px}
+  .alerts .row:first-of-type{border-top:0}
+  table{width:100%;border-collapse:collapse;background:var(--panel);
+        border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);
+        vertical-align:middle;font-size:14px}
+  th{color:var(--dim);font-weight:500;font-size:12.5px;text-transform:uppercase;
+     letter-spacing:.03em;background:var(--th-bg)}
+  th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
+  th.sortable:hover{color:var(--txt)}
+  th .arrow{opacity:.45;font-size:11px}
+  tr:last-child td{border-bottom:0}
+  tbody tr:hover{background:var(--hover)}
+  .ip{font-family:ui-monospace,Consolas,monospace;color:var(--accent)}
+  .sup{margin:3px 0;white-space:nowrap;font-size:13px}
+  .sup .nm{color:var(--dim);display:inline-block;min-width:150px}
+  .bar{display:inline-block;width:110px;height:8px;border-radius:6px;
+       background:var(--bar-bg);vertical-align:middle;margin:0 7px;overflow:hidden}
+  .bar i{display:block;height:100%}
+  .pct{font-variant-numeric:tabular-nums;display:inline-block;min-width:44px}
+  .ok{color:var(--ok)} .warn{color:var(--warn)} .orange{color:var(--orange)} .crit{color:var(--crit)}
+  .bg-ok{background:var(--ok)} .bg-warn{background:var(--warn)}
+  .bg-orange{background:var(--orange)} .bg-crit{background:var(--crit)}
+  .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:12px;
+        border:1px solid var(--line);color:var(--dim)}
+  .off{opacity:.55}
+  .flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:12.5px;
+          color:var(--dim);background:var(--panel);border:1px solid var(--line);
+          border-radius:12px;padding:10px 16px;margin:0 0 18px}
+  .legend span{display:flex;align-items:center;gap:5px}
+  .legend .lead{color:var(--txt);font-weight:500}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .theme{padding:7px 10px;font-size:16px;line-height:1}
+  .loc{cursor:pointer;border-bottom:1px dashed var(--line);padding-bottom:1px}
+  .loc:hover{border-bottom-color:var(--accent);color:var(--accent)}
+  .loc-input{width:130px;padding:3px 6px;font-size:13.5px}
+  dialog{background:var(--panel);color:var(--txt);border:1px solid var(--line);
+         border-radius:14px;padding:0;width:min(560px,94vw)}
+  dialog::backdrop{background:rgba(0,0,0,.55)}
+  .dlg-body{position:relative;padding:18px 20px 20px}
+  .dlg-close{position:absolute;top:10px;right:10px;padding:2px 9px;font-size:15px;
+             line-height:1.3;border-radius:8px;color:var(--dim)}
+  .dlg-close:hover{border-color:var(--crit);color:var(--crit)}
+  .del{padding:2px 9px;font-size:14px;line-height:1.3;color:var(--dim)}
+  .del:hover{border-color:var(--crit);color:var(--crit)}
+  .dlg-body h2{margin:0 0 14px;font-size:17px}
+  .dlg-body h3{margin:0 0 6px;font-size:14px;color:var(--dim);text-transform:uppercase;
+               letter-spacing:.03em}
+  .dlg-body hr{border:0;border-top:1px solid var(--line);margin:16px 0}
+  .field{margin-bottom:10px;display:flex;gap:10px;align-items:center}
+  .field label{width:190px;color:var(--dim);font-size:13.5px}
+  .field input{flex:1;min-width:120px}
+  .dlg-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .filebtn{display:inline-block;background:var(--panel);border:1px solid var(--line);
+           border-radius:8px;padding:7px 11px;font-size:14px;cursor:pointer}
+  .filebtn:hover{border-color:var(--accent)}
+  .filebtn input{display:none}
+  .chip{display:inline-flex;gap:6px;align-items:center;background:var(--th-bg);
+        border:1px solid var(--line);border-radius:20px;padding:3px 10px;font-size:13px}
+  .setup{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+         padding:20px 22px;margin:0 0 18px;max-width:820px}
+  .setup h2{margin:0 0 6px;font-size:18px}
+  .setup h3{margin:0 0 6px;font-size:14px;color:var(--dim);text-transform:uppercase;
+            letter-spacing:.03em}
+  .setup hr{border:0;border-top:1px solid var(--line);margin:16px 0}
+  .net{display:flex;gap:10px;align-items:center;background:var(--th-bg);
+       border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin:6px 0;cursor:pointer}
+  .net:hover{border-color:var(--accent)}
+  .net input[type=checkbox]{width:auto;padding:0;background:none;border:0;accent-color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <h1>🖨 Принтеры — остаток тонера</h1>
+  <span class="muted" id="updated">загрузка…</span>
+  <span class="grow"></span>
+  <input id="q" placeholder="поиск: ip, модель, кабинет…" style="width:220px">
+  <select id="filter">
+    <option value="all">все устройства</option>
+    <option value="low">ниже 30 %</option>
+    <option value="crit">заканчиваются</option>
+    <option value="color">цветные</option>
+    <option value="offline">не отвечают</option>
+  </select>
+  <button id="addBtn" title="добавить принтер и загрузить кабинеты таблицей">➕ Добавить принтер</button>
+  <button id="refresh">Обновить сейчас</button>
+  <button id="quit" title="остановить программу (мониторинг прекратится)">⏹</button>
+  <button id="theme" class="theme" title="светлая тема">☀️</button>
+</header>
+<main>
+  <div class="setup" id="setup" style="display:none"></div>
+  <div class="cards" id="cards"></div>
+  <div class="legend">
+    <span class="lead">Что означают цвета:</span>
+    <span><i class="dot bg-ok"></i> норма — больше 30 %</span>
+    <span><i class="dot bg-warn"></i> внимание — 15–30 %</span>
+    <span><i class="dot bg-orange"></i> заказать — 8–15 %</span>
+    <span><i class="dot bg-crit"></i> критично — 8 % и ниже</span>
+    <span>проценты берутся с самих принтеров по SNMP; встроенный веб-интерфейс может показывать на 2–5 пунктов больше</span>
+  </div>
+  <div class="alerts" id="alerts" style="display:none"></div>
+  <table>
+    <thead>
+      <tr>
+        <th class="sortable" data-key="ip">IP <span class="arrow"></span></th>
+        <th class="sortable" data-key="device">Устройство <span class="arrow"></span></th>
+        <th class="sortable" data-key="location">Кабинет <span class="arrow"></span></th>
+        <th class="sortable" data-key="minPct" title="сортировать по худшему расходнику">Расходники <span class="arrow"></span></th>
+        <th class="sortable" data-key="pages">Страниц <span class="arrow"></span></th>
+        <th class="sortable" data-key="daysLeft">Осталось <span class="arrow"></span></th>
+        <th class="sortable" data-key="status">Статус <span class="arrow"></span></th>
+        <th title="убрать принтер из мониторинга">Удалить</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+</main>
+
+<dialog id="dlg">
+  <div class="dlg-body">
+    <button id="dlgClose" class="dlg-close" title="закрыть (Esc)">✕</button>
+    <h2>Добавить принтер</h2>
+    <div class="field"><label for="f_ip">IP-адрес</label><input id="f_ip" placeholder="10.52.20.15"></div>
+    <div class="field"><label for="f_loc">Кабинет</label><input id="f_loc" placeholder="305"></div>
+    <div class="field"><label for="f_sub">Подсеть для опроса</label><input id="f_sub" placeholder="10.52.20. (необязательно)"></div>
+    <p class="muted">Если принтер в другой подсети — укажи её, и программа начнёт опрашивать всю подсеть
+      (адреса <code>x.x.x.1</code>–<code>x.x.x.254</code>). Если оставить поле пустым, будет опрашиваться только этот адрес.</p>
+    <div class="dlg-actions">
+      <button id="addSave">Сохранить</button>
+      <button id="addCancel">Отмена</button>
+    </div>
+    <hr>
+    <h3>Кабинеты таблицей (пакетно)</h3>
+    <p class="muted">Скачай таблицу, впиши кабинеты в Excel в колонку «кабинет» и загрузи файл обратно.
+      Строки с пустым кабинетом ничего не меняют; строки с новыми адресами добавляются в опрос автоматически.</p>
+    <div class="dlg-actions">
+      <button id="csvExport">⬇ Скачать таблицу</button>
+      <label class="filebtn">⬆ Загрузить таблицу<input type="file" id="csvImport" accept=".csv,text/csv,text/plain"></label>
+    </div>
+    <hr>
+    <h3>Опрашиваемые подсети</h3>
+    <div id="subnetList" class="flex"></div>
+    <p class="muted" id="hostList" style="margin-top:8px"></p>
+    <p id="dlgMsg" class="muted" style="margin-top:12px"></p>
+  </div>
+</dialog>
+
+<script>
+const $ = s => document.querySelector(s);
+let DATA = null, CFG = null;
+let SORT = { key: 'minPct', dir: 1 };
+let EDITING = false;
+
+// ── тема оформления ──────────────────────────────────────────────
+const THEME_KEY = '***';
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  const btn = $('#theme');
+  btn.textContent = t === 'light' ? '🌙' : '☀️';
+  btn.title = t === 'light' ? 'включить тёмную тему' : 'включить светлую тему';
+}
+let theme = localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark';
+applyTheme(theme);
+$('#theme').onclick = () => {
+  theme = theme === 'light' ? 'dark' : 'light';
+  localStorage.setItem(THEME_KEY, theme);
+  applyTheme(theme);
+};
+
+function cls(p){
+  if (p === null || p === undefined) return ['ok','bg-undef','—'];
+  if (p <= 8) return ['crit','bg-crit', p.toFixed(0)+'%'];
+  if (p <= 15) return ['orange','bg-orange', p.toFixed(0)+'%'];
+  if (p <= 30) return ['warn','bg-warn', p.toFixed(0)+'%'];
+  return ['ok','bg-ok', p.toFixed(0)+'%'];
+}
+function esc(s){ return (s??'').toString().replace(/[&<>"]/g, c=>(
+  {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function supplyLine(s){
+  const [c,bar,label] = cls(s.pct);
+  const note = s.note ? ` <span class="muted">(${esc(s.note)})</span>` : '';
+  const nm = esc(s.name).replace(/^(Black|Cyan|Magenta|Yellow) Cartridge\s*/i, m =>
+      ({'Black':'чёрный ','Cyan':'циан ','Magenta':'маджента ','Yellow':'жёлтый '}[m.trim().split(' ')[0]]));
+  const pctVal = s.pct === null || s.pct === undefined ? 0 : Math.max(0, Math.min(100, s.pct));
+  return `<div class="sup"><span class="nm">${nm}</span>
+     <span class="bar"><i class="${bar}" style="width:${pctVal}%"></i></span>
+     <span class="pct ${c}">${label}</span>${note}</div>`;
+}
+
+function daysText(d){
+  if (d.daysLeft === null || d.daysLeft === undefined) return '—';
+  const v = d.daysLeft;
+  if (v > 365) return '> года';
+  if (v < 1) return 'сутки';
+  return Math.round(v) + ' дн.';
+}
+
+// ── сортировка ───────────────────────────────────────────────────
+function lastOctet(ip){
+  const p = (ip||'').split('.');
+  return parseInt(p[p.length-1], 10) || 0;
+}
+function sortValue(d, key){
+  switch (key){
+    case 'ip': return lastOctet(d.ip);
+    case 'device': return ((d.model || d.name || '') + '').toLowerCase() || null;
+    case 'location': return (d.location || '').toLowerCase() || null;
+    case 'minPct': return (d.minPct === null || d.minPct === undefined) ? null : d.minPct;
+    case 'pages': return d.pages || 0;
+    case 'daysLeft': return (d.daysLeft === null || d.daysLeft === undefined) ? null : d.daysLeft;
+    case 'status': {
+      const s = (d.status || '').toLowerCase();
+      return (d.online ? '' : 'z') + s;
+    }
+  }
+  return null;
+}
+function compare(a, b){
+  const va = sortValue(a, SORT.key), vb = sortValue(b, SORT.key);
+  const na = va === null || va === undefined, nb = vb === null || vb === undefined;
+  if (na && nb) return lastOctet(a.ip) - lastOctet(b.ip);   // пустые — всегда внизу
+  if (na) return 1;
+  if (nb) return -1;
+  let r;
+  if (typeof va === 'number' && typeof vb === 'number') r = va - vb;
+  else r = String(va).localeCompare(String(vb), 'ru');
+  if (r === 0) r = lastOctet(a.ip) - lastOctet(b.ip);
+  return SORT.dir * r;
+}
+function paintArrows(){
+  document.querySelectorAll('th.sortable').forEach(th => {
+    const a = th.querySelector('.arrow');
+    a.textContent = th.dataset.key === SORT.key ? (SORT.dir === 1 ? '▲' : '▼') : '';
+  });
+}
+document.querySelectorAll('th.sortable').forEach(th => {
+  th.onclick = () => {
+    const k = th.dataset.key;
+    if (SORT.key === k) SORT.dir = -SORT.dir; else { SORT.key = k; SORT.dir = 1; }
+    paintArrows();
+    render();
+  };
+});
+
+function render(){
+  if (!DATA) return;
+  // Первый запуск: пока адреса не заданы, вместо таблицы — вопрос о подсети.
+  const needSetup = !!(CFG && CFG.needsSetup);
+  $('#setup').style.display = needSetup ? '' : 'none';
+  $('#cards').style.display = needSetup ? 'none' : '';
+  document.querySelector('.legend').style.display = needSetup ? 'none' : '';
+  document.querySelector('table').style.display = needSetup ? 'none' : '';
+  if (needSetup){
+    $('#alerts').style.display = 'none';
+    renderSetup();
+    return;
+  }
+  paintArrows();
+  const ds = DATA.devices || [];
+  const printers = ds.filter(d => (d.supplies||[]).length);
+  const online = printers.filter(d => d.online).length;
+  const alerts = DATA.alerts || [];
+  const crit = alerts.filter(a => a.level === 'crit').length;
+
+  $('#cards').innerHTML = `
+    <div class="card"><span class="muted">устройств в парке</span><b>${printers.length}</b></div>
+    <div class="card"><span class="muted">отвечают</span><b>${online}</b></div>
+    <div class="card"><span class="muted">в зоне риска</span><b class="${alerts.length?'warn':''}">${alerts.length}</b></div>
+    <div class="card"><span class="muted">критично</span><b class="${crit?'crit':''}">${crit}</b></div>`;
+
+  if (alerts.length){
+    $('#alerts').style.display = '';
+    $('#alerts').innerHTML = '<h2>Пора заказывать картриджи</h2>' + alerts.map(a =>
+      `<div class="row"><span class="ip">${esc(a.ip)}</span> — ${esc(a.model)} —
+        <span class="pill">каб. ${a.location ? esc(a.location) : 'не задан'}</span>
+        <span class="${a.level==='crit'?'crit':'orange'}">${a.pct.toFixed(0)}%</span>
+        <span class="muted">${esc(a.text)}</span></div>`).join('');
+  } else {
+    $('#alerts').style.display = 'none';
+  }
+
+  const q = $('#q').value.trim().toLowerCase();
+  const f = $('#filter').value;
+
+  const filtered = ds.filter(d => {
+    const sup = d.supplies || [];
+    const isP = sup.length > 0;
+    if (f === 'color' && sup.length < 3) return false;
+    if (f === 'low' && !sup.some(s => s.pct !== null && s.pct <= 30)) return false;
+    if (f === 'crit' && !(d.minPct !== null && d.minPct <= 15)) return false;
+    if (f === 'offline' && d.online) return false;
+    if (q){
+      const hay = [d.ip,d.name,d.model,d.location,d.serial].join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return isP || f === 'offline';
+  }).sort(compare);
+
+  $('#rows').innerHTML = filtered.map(d => {
+    const sup = (d.supplies || []);
+    const [c] = cls(d.minPct);
+    const loc = d.location
+      ? esc(d.location)
+      : '<span class="muted">не задан</span>';
+    return `<tr class="${d.online ? '' : 'off'}">
+      <td class="ip">${esc(d.ip)}</td>
+      <td>${esc(d.model || d.name)}${d.vendor ? ` <span class="pill">${esc(d.vendor)}</span>` : ''}
+          <div class="muted" style="font-size:12px">${esc(d.name||'')}${d.serial? ' · '+esc(d.serial):''}</div></td>
+      <td><span class="loc" data-ip="${esc(d.ip)}" title="нажми, чтобы изменить кабинет">${loc}</span></td>
+      <td>${sup.length ? sup.map(supplyLine).join('') : '<span class="muted">нет данных о расходниках</span>'}</td>
+      <td>${d.pages ? d.pages.toLocaleString('ru-RU') : '—'}</td>
+      <td class="${c}">${daysText(d)}</td>
+      <td>${esc(d.status || '—')}<div class="muted" style="font-size:12px">${esc(d.lastSeen||'')}</div></td>
+      <td><button class="del" data-ip="${esc(d.ip)}" title="убрать из мониторинга">➖</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="8" class="muted">ничего не найдено</td></tr>';
+}
+
+// ── первый запуск: спрашиваем про подсеть ────────────────────────
+function renderSetup(){
+  const locs = (CFG && CFG.localSubnets) || [];
+  const found = locs.length
+    ? locs.map(l => `<label class="net"><input type="checkbox" class="netpick" value="${esc(l.prefix)}" checked>
+        <span><b>${esc(l.prefix)}*</b>
+        <span class="muted">${esc(l.iface)} · адрес этого компьютера ${esc(l.ip)}</span></span></label>`).join('')
+    : '<p class="muted">Свои подсети определить не удалось — впиши вручную ниже.</p>';
+  $('#setup').innerHTML = `
+    <h2>👋 Похоже, программа запущена впервые</h2>
+    <p class="muted">Я могу сама найти принтеры в вашей сети. Опрос идёт по SNMP (UDP/161):
+      программа только спрашивает принтеры об уровне тонера и ничего не печатает.</p>
+    <p><b>Хотите просканировать вашу подсеть?</b></p>
+    ${found}
+    <div class="dlg-actions">
+      <button id="setupScan">✅ Сканировать</button>
+      <button id="setupSkip">Не сейчас</button>
+    </div>
+    <hr>
+    <h3>Или укажи подсеть вручную</h3>
+    <div class="field"><label for="setupManual">Подсеть</label>
+      <input id="setupManual" placeholder="192.168.1.">
+      <button id="setupManualBtn">Добавить</button></div>
+    <p class="muted" id="setupMsg"></p>`;
+
+  $('#setupScan').onclick = async () => {
+    const picked = [...document.querySelectorAll('.netpick')].filter(c => c.checked).map(c => c.value);
+    await applySetup('scan', picked, 'Запустила опрос сети — результат появится примерно через минуту.');
+  };
+  $('#setupSkip').onclick = () => applySetup('skip', [],
+    'Хорошо. Добавить подсеть или отдельный принтер можно кнопкой «➕ Добавить принтер» в шапке.');
+  $('#setupManualBtn').onclick = () => {
+    const v = $('#setupManual').value.trim();
+    if (!v) { $('#setupMsg').textContent = 'Впиши подсеть, например 192.168.1.'; return; }
+    applySetup('manual', [v], 'Подсеть добавлена, запускаю опрос.');
+  };
+}
+
+async function applySetup(action, subnets, msg){
+  $('#setupMsg').textContent = 'сохраняю…';
+  try{
+    const r = await fetch('/api/setup', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({action, subnets})
+    });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'не сохранилось');
+    $('#setupMsg').textContent = msg || 'Готово.';
+    await loadConfig();
+    if (j.polling){
+      setTimeout(load, 5000);
+      setTimeout(load, 25000);
+    } else {
+      await load();
+    }
+  }catch(err){
+    $('#setupMsg').textContent = 'Ошибка: ' + err.message;
+  }
+}
+
+// ── кабинет прямо в таблице ──────────────────────────────────────
+document.addEventListener('click', e => {
+  const el = e.target.closest('.loc');
+  if (!el || EDITING) return;
+  const ip = el.dataset.ip;
+  const cur = (DATA?.devices||[]).find(d => d.ip === ip)?.location || '';
+  EDITING = true;
+  el.innerHTML = `<input class="loc-input" value="${esc(cur)}">`;
+  const inp = el.querySelector('input');
+  inp.focus(); inp.select();
+  let done = false;
+  const finish = async (save) => {
+    if (done) return;
+    done = true;
+    const val = inp.value.trim();
+    EDITING = false;
+    if (save && val !== cur) await saveLocation(ip, val);
+    else render();
+  };
+  inp.onkeydown = ev => {
+    if (ev.key === 'Enter') finish(true);
+    if (ev.key === 'Escape') finish(false);
+  };
+  inp.onblur = () => finish(true);
+});
+
+async function saveLocation(ip, location){
+  try{
+    const r = await fetch('/api/locations', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ip, location})
+    });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'не сохранилось');
+    const d = (DATA.devices||[]).find(x => x.ip === ip);
+    if (d) d.location = location;
+    const a = (DATA.alerts||[]).find(x => x.ip === ip);
+    if (a) a.location = location;
+    $('#updated').textContent = `кабинет ${ip} → ${location || 'пусто'}`;
+  }catch(err){
+    $('#updated').textContent = 'ошибка: ' + err.message;
+  }
+  render();
+}
+
+// ── удаление принтера ────────────────────────────────────────────
+document.addEventListener('click', async e => {
+  const btn = e.target.closest('.del');
+  if (!btn) return;
+  const ip = btn.dataset.ip;
+  const d = (DATA?.devices||[]).find(x => x.ip === ip) || {};
+  const who = (d.model || d.name || 'принтер') + ' (' + ip + ')';
+  if (!confirm('Убрать из мониторинга: ' + who + '?\n\nОн исчезнет из таблицы, его история будет удалена, и опрос больше не будет к нему обращаться.')) return;
+  btn.disabled = true;
+  try{
+    const r = await fetch('/api/printer/remove', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ip})
+    });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'не удалилось');
+    $('#updated').textContent = 'убрано из мониторинга: ' + ip;
+    await load();
+    await loadConfig();
+  }catch(err){
+    btn.disabled = false;
+    alert('Не получилось удалить: ' + err.message);
+  }
+});
+
+// ── диалог: добавить принтер и таблица кабинетов ─────────────────
+const dlg = $('#dlg');
+$('#addBtn').onclick = async () => { await loadConfig(); $('#dlgMsg').textContent=''; dlg.showModal(); };
+$('#addCancel').onclick = () => dlg.close();
+$('#dlgClose').onclick = () => dlg.close();
+$('#addSave').onclick = async () => {
+  const ip = $('#f_ip').value.trim();
+  const location = $('#f_loc').value.trim();
+  const subnet = $('#f_sub').value.trim();
+  if (!ip) { $('#dlgMsg').textContent = 'Укажи IP-адрес принтера.'; return; }
+  $('#dlgMsg').textContent = 'сохраняю…';
+  try{
+    const r = await fetch('/api/printer', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ip, location, subnet})
+    });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'не сохранилось');
+    $('#dlgMsg').textContent = j.polling
+      ? 'Готово. Адрес добавлен, запускаю опрос — результат появится через минуту.'
+      : 'Готово: кабинет обновлён.';
+    $('#f_ip').value = ''; $('#f_loc').value = ''; $('#f_sub').value = '';
+    await loadConfig();
+    setTimeout(load, 1500);
+  }catch(err){
+    $('#dlgMsg').textContent = 'Ошибка: ' + err.message;
+  }
+};
+
+$('#csvExport').onclick = () => {
+  const a = document.createElement('a');
+  a.href = '/api/locations.csv';
+  a.download = 'printmon-кабинеты.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+};
+
+$('#csvImport').onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  $('#dlgMsg').textContent = 'загружаю ' + file.name + '…';
+  try{
+    const text = await file.text();
+    const r = await fetch('/api/locations.csv', {
+      method:'POST', headers:{'Content-Type':'text/csv; charset=utf-8'}, body: text
+    });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'не разобрать файл');
+    $('#dlgMsg').textContent = `Загружено строк: ${j.rows}. Новых адресов в опрос: ${j.newHosts}.` +
+      (j.polling ? ' Идёт опрос — обнови страницу через минуту.' : '');
+    await loadConfig();
+    setTimeout(load, 1500);
+  }catch(err){
+    $('#dlgMsg').textContent = 'Ошибка: ' + err.message;
+  }
+  e.target.value = '';
+};
+
+async function loadConfig(){
+  try{
+    const r = await fetch('/api/config', {cache:'no-store'});
+    CFG = await r.json();
+    $('#subnetList').innerHTML = (CFG.subnets||[]).map(s =>
+      `<span class="chip">${esc(s)}*</span>`).join('') || '<span class="muted">подсети не заданы</span>';
+    const hosts = (CFG.hosts||[]);
+    $('#hostList').textContent = hosts.length
+      ? 'Отдельные адреса вне подсетей: ' + hosts.join(', ')
+      : '';
+  }catch(e){ /* не критично */ }
+  if (DATA) render();
+}
+
+// ── загрузка данных ──────────────────────────────────────────────
+async function load(){
+  if (EDITING) return;
+  try{
+    const r = await fetch('/api/data', {cache:'no-store'});
+    DATA = await r.json();
+    $('#updated').textContent = 'обновлено: ' + DATA.generated;
+    render();
+  }catch(e){
+    $('#updated').textContent = 'нет связи с демоном';
+  }
+}
+
+$('#refresh').onclick = async () => {
+  $('#updated').textContent = 'опрошаю парк…';
+  await fetch('/api/refresh');
+  setTimeout(load, 4000);
+};
+
+// Остановка программы: закрытие вкладки её НЕ останавливает — это сделано
+// специально, чтобы случайно закрытое окно не выключало мониторинг.
+$('#quit').onclick = async () => {
+  if (!confirm('Остановить программу?\n\nПринтеры перестанут опрашиваться, ' +
+      'предупреждения о низком тонере приходить не будут.\n' +
+      'Запустить снова можно обычным запуском printmon-gui.exe.')) return;
+  $('#updated').textContent = 'останавливаю программу…';
+  try{ await fetch('/api/quit', {method:'POST'}); }catch(e){}
+  document.body.innerHTML = '<main><div class="card" style="max-width:520px;margin:80px auto">' +
+    '<span class="muted">Программа остановлена</span><b>Мониторинг выключен</b>' +
+    '<p class="muted">Эту вкладку можно закрыть. Чтобы снова следить за принтерами, ' +
+    'запусти <code>printmon-gui.exe</code> — вкладка откроется сама.</p></div></main>';
+};
+$('#q').oninput = render;
+$('#filter').onchange = render;
+load().then(loadConfig);
+setInterval(load, 60000);
+</script>
+</body>
+</html>
